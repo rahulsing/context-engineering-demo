@@ -1,0 +1,256 @@
+# Customer Segments Ontology — OWL/SKOS
+# Defines domain knowledge about retail customer types and churn behaviors
+
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix retail: <http://example.com/retail/2026/> .
+
+# ============================================================================
+# Class Hierarchy: Customer Types
+# ============================================================================
+
+retail:Customer
+  a owl:Class ;
+  rdfs:label "Customer"@en ;
+  skos:definition "A person or entity that has made at least one purchase"@en .
+
+retail:ActiveCustomer
+  a owl:Class ;
+  rdfs:subClassOf retail:Customer ;
+  rdfs:label "Active Customer"@en ;
+  skos:definition "A customer who has made a purchase in the last 90 days"@en .
+
+retail:HighValueCustomer
+  a owl:Class ;
+  rdfs:subClassOf retail:ActiveCustomer ;
+  rdfs:label "High-Value Customer"@en ;
+  skos:definition "Active customer with LTV > $5000, demonstrating strong lifetime value and loyalty"@en ;
+  skos:example "CUST_00001, CUST_00002, CUST_00003"@en .
+
+retail:StandardCustomer
+  a owl:Class ;
+  rdfs:subClassOf retail:ActiveCustomer ;
+  rdfs:label "Standard Customer"@en ;
+  skos:definition "Active customer with LTV between $1000-$5000, regular purchaser"@en ;
+  skos:example "CUST_00004, CUST_00005, CUST_00006, CUST_00007"@en .
+
+retail:AtRiskCustomer
+  a owl:Class ;
+  rdfs:subClassOf retail:Customer ;
+  rdfs:label "At-Risk Customer"@en ;
+  skos:definition "Customer with churn risk score > 70, showing signs of disengagement"@en ;
+  skos:relatedMatch retail:ChurnTrigger ;
+  skos:example "CUST_00008, CUST_00009, CUST_00010"@en .
+
+retail:DormantCustomer
+  a owl:Class ;
+  rdfs:subClassOf retail:Customer ;
+  rdfs:label "Dormant Customer"@en ;
+  skos:definition "Customer with no purchases in 365+ days and churn risk score > 90"@en ;
+  skos:example "CUST_00011, CUST_00012"@en .
+
+# ============================================================================
+# Churn Risk Thresholds (Business Rules)
+# ============================================================================
+
+retail:ChurnRiskScore
+  a owl:Class ;
+  rdfs:label "Churn Risk Score"@en ;
+  skos:definition "0-100 score indicating customer likelihood to churn (100 = highest risk)"@en ;
+  skos:note "Formula: (days_since_purchase × 10) + (return_rate × 5) − (repeat_rate × 3)"@en .
+
+retail:ChurnTrigger
+  a owl:Class ;
+  rdfs:label "Churn Trigger"@en ;
+  skos:definition "Automatic action when churn risk threshold is exceeded"@en .
+
+retail:CriticalChurn
+  a retail:ChurnTrigger ;
+  rdfs:label "Critical Churn Risk"@en ;
+  skos:definition "Churn risk score > 85 — IMMEDIATE ACTION REQUIRED"@en ;
+  skos:note "Threshold: 85/100"@en ;
+  retail:requires_action "retention_offer_24h"@en ;
+  retail:recommended_discount "15-20% discount or special offer"@en ;
+  retail:escalation_to "retention_specialist"@en .
+
+retail:HighChurn
+  a retail:ChurnTrigger ;
+  rdfs:label "High Churn Risk"@en ;
+  skos:definition "Churn risk score 70-85 — MONITOR AND PREPARE"@en ;
+  skos:note "Threshold range: 70-85"@en ;
+  retail:requires_action "monitor_engagement"@en ;
+  retail:prepare_offer "yes"@en ;
+  retail:email_frequency "weekly check-in"@en .
+
+retail:MediumChurn
+  a retail:ChurnTrigger ;
+  rdfs:label "Medium Churn Risk"@en ;
+  skos:definition "Churn risk score 50-70 — WATCH FOR DECLINE"@en ;
+  skos:note "Threshold range: 50-70"@en ;
+  retail:requires_action "standard_engagement"@en .
+
+retail:LowChurn
+  a retail:ChurnTrigger ;
+  rdfs:label "Low Churn Risk"@en ;
+  skos:definition "Churn risk score < 50 — STABLE CUSTOMER"@en ;
+  skos:note "Threshold: < 50"@en ;
+  retail:requires_action "none"@en .
+
+# ============================================================================
+# Customer Lifetime Value (LTV) Tiers
+# ============================================================================
+
+retail:LifetimeValue
+  a owl:Class ;
+  rdfs:label "Customer Lifetime Value"@en ;
+  skos:definition "Total revenue expected from a customer over their lifetime"@en ;
+  skos:formula "Average Order Value × Purchase Frequency × Customer Lifespan (months)"@en .
+
+retail:HighValueTier
+  a owl:Class ;
+  rdfs:subClassOf retail:LifetimeValue ;
+  rdfs:label "High-Value Tier"@en ;
+  skos:definition "LTV > $5000 — Premium customers requiring VIP treatment"@en ;
+  retail:ltv_threshold_min 5000 ;
+  retail:priority "VIP" ;
+  retail:retention_strategy "dedicated_support, exclusive_offers, early_access"@en .
+
+retail:StandardValueTier
+  a owl:Class ;
+  rdfs:subClassOf retail:LifetimeValue ;
+  rdfs:label "Standard-Value Tier"@en ;
+  skos:definition "LTV $1000-$5000 — Regular customers, core revenue base"@en ;
+  retail:ltv_threshold_min 1000 ;
+  retail:ltv_threshold_max 5000 ;
+  retail:priority "standard" ;
+  retail:retention_strategy "personalized_offers, email_campaigns"@en .
+
+retail:LowValueTier
+  a owl:Class ;
+  rdfs:subClassOf retail:LifetimeValue ;
+  rdfs:label "Low-Value Tier"@en ;
+  skos:definition "LTV < $1000 — Price-sensitive customers"@en ;
+  retail:ltv_threshold_max 1000 ;
+  retail:priority "standard" ;
+  retail:retention_strategy "promotional_campaigns"@en .
+
+# ============================================================================
+# Retention Actions (Prescribed Workflows)
+# ============================================================================
+
+retail:RetentionAction
+  a owl:Class ;
+  rdfs:label "Retention Action"@en ;
+  skos:definition "Structured workflow triggered by churn risk"@en .
+
+retail:RetentionOffer24h
+  a retail:RetentionAction ;
+  rdfs:label "Retention Offer (24-hour)"@en ;
+  skos:definition "Send personalized offer within 24 hours to critical churn customers"@en ;
+  retail:trigger "churn_risk_score > 85"@en ;
+  retail:timeline "within 24 hours"@en ;
+  retail:channel "email, sms, in-app"@en ;
+  retail:personalization "customer name, last purchase, favorite category"@en ;
+  retail:escalation "assign to retention_specialist if not redeemed in 48h"@en .
+
+retail:WinBackCampaign
+  a retail:RetentionAction ;
+  rdfs:label "Win-Back Campaign"@en ;
+  skos:definition "Re-engagement campaign for dormant customers (365+ days)"@en ;
+  retail:trigger "days_since_purchase > 365 AND churn_risk_score > 90"@en ;
+  retail:timeline "within 7 days"@en ;
+  retail:channel "email, direct_mail, paid_social"@en ;
+  retail:offer_type "special_comeback_discount, free_shipping"@en .
+
+retail:VIPRetention
+  a retail:RetentionAction ;
+  rdfs:label "VIP Retention Program"@en ;
+  skos:definition "Premium retention for high-value customers showing any churn signals"@en ;
+  retail:trigger "ltv > 5000 AND churn_risk_score > 50"@en ;
+  retail:timeline "immediate"@en ;
+  retail:dedicated_support "yes"@en ;
+  retail:personal_account_manager "yes"@en .
+
+# ============================================================================
+# Business Metrics & KPIs
+# ============================================================================
+
+retail:RetentionMetric
+  a owl:Class ;
+  rdfs:label "Retention Metric"@en ;
+  skos:definition "Key performance indicator for customer retention"@en .
+
+retail:RepeatPurchaseRate
+  a retail:RetentionMetric ;
+  rdfs:label "Repeat Purchase Rate"@en ;
+  skos:definition "Percentage of customers who made more than one purchase"@en ;
+  skos:formula "(repeat_customers / total_customers) × 100"@en ;
+  retail:benchmark "45-55% for retail industry"@en ;
+  retail:good_threshold "above 50%"@en .
+
+retail:ChurnRate
+  a retail:RetentionMetric ;
+  rdfs:label "Churn Rate"@en ;
+  skos:definition "Percentage of customers lost in a given period"@en ;
+  retail:benchmark "5-10% monthly for retail"@en ;
+  retail:good_threshold "below 8%"@en ;
+  retail:critical_threshold "above 15%"@en .
+
+retail:CustomerLTVRatio
+  a retail:RetentionMetric ;
+  rdfs:label "Average Customer LTV"@en ;
+  skos:definition "Mean lifetime value across all customers"@en ;
+  retail:calculation "SUM(all LTVs) / COUNT(customers)"@en ;
+  retail:good_trend "upward over 6 months"@en .
+
+# ============================================================================
+# Regional Considerations
+# ============================================================================
+
+retail:Region
+  a owl:Class ;
+  rdfs:label "Geographic Region"@en ;
+  skos:definition "Market area with distinct customer behavior patterns"@en .
+
+retail:RegionUS
+  a retail:Region ;
+  rdfs:label "North America (US)"@en ;
+  retail:avg_ltv_threshold 2500 ;
+  retail:currency "USD"@en ;
+  retail:retention_preference "email, sms"@en .
+
+retail:RegionEU
+  a retail:Region ;
+  rdfs:label "Europe (EU)"@en ;
+  retail:avg_ltv_threshold 2000 ;
+  retail:currency "EUR"@en ;
+  retail:compliance "GDPR"@en ;
+  retail:retention_preference "email, GDPR-compliant"@en .
+
+retail:RegionAPAC
+  a retail:Region ;
+  rdfs:label "Asia-Pacific (APAC)"@en ;
+  retail:avg_ltv_threshold 1500 ;
+  retail:currency "Mixed (SGD, AUD, JPY)"@en ;
+  retail:retention_preference "social_media, messaging_apps"@en .
+
+# ============================================================================
+# Key Insights & Decision Rules
+# ============================================================================
+
+# Rule 1: High-Value + High Churn = Immediate Priority
+# IF ltv > 5000 AND churn_risk_score > 70 THEN action = VIPRetention
+
+# Rule 2: At-Risk Customer Intervention
+# IF churn_risk_score > 85 THEN action = RetentionOffer24h, timeline = 24h
+
+# Rule 3: Dormant Customer Recovery
+# IF days_since_purchase > 365 AND churn_risk_score > 90 THEN action = WinBackCampaign
+
+# Rule 4: Segment Sizing
+# high_value_count = COUNT(customer_ltv > 5000)
+# standard_count = COUNT(1000 <= customer_ltv <= 5000)
+# at_risk_count = COUNT(churn_risk_score > 70)
+# dormant_count = COUNT(days_since_purchase > 365)

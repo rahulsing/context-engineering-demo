@@ -1,0 +1,146 @@
+openDataProductSpecification: 2.0.0
+
+product:
+  name: Customer Analytics
+  productID: urn:dataproduct:retail:customer-analytics:v1
+  visibility: internal
+  status: active
+  version: "1.0.0"
+  type: dataset
+  domain: Retail Customer Analytics
+  description: >
+    Governed data product providing customer lifetime value (LTV), churn
+    risk, and retention signal analytics for the Retail Analytics team.
+    Covers customer segmentation (high-value, standard, at-risk, dormant),
+    repeat purchase behavior, and regional performance across US, EU, and
+    APAC. Used for VIP program targeting, retention campaign planning, and
+    AI-assisted customer analytics queries.
+
+  owner:
+    name: Retail Analytics Team
+    email: analytics@retailcompany.com
+    team: Analytics
+
+  categories:
+    - retail
+    - customer-analytics
+    - retention
+
+  tags:
+    - customer-ltv
+    - churn-risk
+    - retention
+    - segmentation
+
+  useCases:
+    - VIP retention targeting for high-value at-risk customers
+    - Churn risk segmentation for proactive retention outreach
+    - Customer lifetime value forecasting
+    - Regional performance benchmarking across US, EU, and APAC
+    - AI-assisted customer analytics via natural language
+
+  inputPorts:
+    - name: ecommerce_order_system
+      type: operational_db
+      description: >
+        Source of order and transaction records from the e-commerce
+        platform. Feeds the daily customer_metrics aggregation.
+      format: SQL
+      refreshCadence: daily
+      refreshTime: "02:00 UTC"
+
+  outputPorts:
+    - name: customer_analytics_db
+      type: duckdb
+      description: >
+        Analytical DuckDB instance optimised for agent queries. Contains
+        the customer_metrics table with one row per customer, refreshed
+        daily.
+      path: customer_analytics.duckdb
+      tables:
+        - name: customer_metrics
+          description: >
+            Daily customer health snapshot aggregated by customer ID and
+            region. Use this table to identify high-value customers for
+            VIP programs, detect at-risk customers for retention
+            campaigns, measure repeat purchase rate by segment, or
+            forecast customer lifetime value trends.
+          columns:
+            - name: customer_id
+              type: VARCHAR
+              description: Unique customer identifier (anonymized)
+            - name: region
+              type: VARCHAR
+              description: Geographic region — US, EU, or APAC
+            - name: customer_ltv
+              type: DECIMAL(10,2)
+              description: >
+                Customer lifetime value in USD. Tiers — High-value: LTV >
+                $5000, Standard: $1000-$5000, Low-value: < $1000.
+            - name: churn_risk_score
+              type: INTEGER
+              description: >
+                Churn risk as a 0-100 score (100 = highest risk).
+                Thresholds — >85: CRITICAL, 70-85: HIGH, 50-70: MEDIUM,
+                <50: LOW.
+            - name: repeat_purchase_rate
+              type: DECIMAL(5,1)
+              description: Percentage of customers who made repeat purchases (0-100)
+            - name: average_order_value
+              type: DECIMAL(10,2)
+              description: Average value per order in USD
+            - name: purchase_frequency_12m
+              type: DECIMAL(10,1)
+              description: Number of purchases in the last 12 months
+            - name: days_since_last_purchase
+              type: INTEGER
+              description: Days since the customer's last purchase (0 = purchased today)
+            - name: return_rate
+              type: DECIMAL(5,1)
+              description: Percentage of purchases returned (0-100)
+            - name: segment
+              type: VARCHAR
+              description: >
+                Customer segment assignment — high-value, standard,
+                at-risk, or dormant.
+            - name: updated_date
+              type: DATE
+              description: Date of last metric refresh (UTC)
+
+  slaProperties:
+    - dimension: freshness
+      value: P1D
+      description: Data refreshed daily at 02:00 UTC
+    - dimension: availability
+      value: 99.5%
+      description: Target uptime for analytics queries
+    - dimension: retention
+      value: P2Y
+      description: Rolling retention period for historical data
+
+  dataQuality:
+    - dimension: completeness
+      checks:
+        - row_count > 0
+        - duplicate_count(customer_id, region) = 0
+    - dimension: validity
+      checks:
+        - min(customer_ltv) >= 0
+        - min(churn_risk_score) >= 0 AND max(churn_risk_score) <= 100
+        - min(repeat_purchase_rate) >= 0 AND max(repeat_purchase_rate) <= 100
+
+  pricing:
+    model: internal
+    cost: free
+
+  terms:
+    usage: >
+      Data is provided for internal marketing and analytics use only. Not
+      for use in direct targeting without compliance review. GDPR/CCPA
+      regulations apply to all customer data usage.
+    limitations: >
+      Churn scores are predictive and may not reflect actual behavior. LTV
+      calculations use historical data; future value may differ. Data is
+      anonymized at customer_id level — do not attempt to re-identify.
+    dataRetention: P2Y
+    noticePeriod: P1M

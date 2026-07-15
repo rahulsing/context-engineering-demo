@@ -1,0 +1,391 @@
+# MetricFlow Metrics Definition — Retail Customer Analytics
+# Defines governed business metrics with formulas, ownership, and SLAs
+
+# ============================================================================
+# Metrics Catalogue
+# ============================================================================
+
+metrics:
+  # ========================================================================
+  # METRIC 1: Customer Lifetime Value
+  # ========================================================================
+  - name: customer_ltv
+    type: simple
+    label: "Customer Lifetime Value (USD)"
+    description: >
+      Total expected revenue from a customer over their entire lifetime.
+      Formula: Average Order Value × Purchase Frequency × Customer Lifespan (months)
+
+      Tiers:
+      - High-value: > $5000 (VIP treatment)
+      - Standard: $1000-$5000 (core revenue)
+      - Low-value: < $1000 (acquisition focus)
+
+    owner: "analytics@retailcompany.com"
+    team: "Analytics"
+    status: "active"
+    certified: true
+
+    formula: "average_order_value * purchase_frequency_12m * lifespan_months"
+
+    unit: "USD"
+    precision: 2
+
+    sla:
+      freshness: "daily at 02:00 UTC"
+      accuracy: "99.5%"
+      retention: "24 months"
+
+    governance:
+      - rule: "value must be >= 0"
+      - rule: "null values not allowed"
+      - rule: "changes logged for audit"
+
+    benchmark:
+      industry_average: 2500
+      our_target: 3000
+      good_performer: "> 3500"
+
+    related_metrics:
+      - average_order_value
+      - repeat_purchase_rate
+      - customer_lifespan_months
+
+    tags:
+      - revenue
+      - customer-health
+      - financial
+      - retention
+
+  # ========================================================================
+  # METRIC 2: Churn Risk Score (Derived)
+  # ========================================================================
+  - name: churn_risk_score
+    type: simple
+    label: "Churn Risk Score (0-100)"
+    description: >
+      Predictive score indicating likelihood of customer churn.
+      Range: 0-100 (100 = highest risk)
+
+      Formula: (days_since_purchase × 10) + (return_rate × 5) − (repeat_rate × 3)
+
+      Thresholds:
+      - Critical (> 85): Trigger retention offer within 24 hours
+      - High (70-85): Monitor closely, prepare offer
+      - Medium (50-70): Watch for further decline
+      - Low (< 50): Stable customer
+
+    owner: "analytics@retailcompany.com"
+    team: "Analytics"
+    status: "active"
+    certified: true
+
+    formula: "(days_since_last_purchase * 10) + (return_rate * 5) - (repeat_purchase_rate * 3)"
+
+    unit: "score"
+    precision: 0
+    min_value: 0
+    max_value: 100
+
+    sla:
+      freshness: "daily at 02:00 UTC"
+      accuracy: "95%"
+      latency: "< 2 hours"
+
+    governance:
+      - rule: "score must be between 0-100"
+      - rule: "updated daily with fresh data"
+      - rule: "formula changes require 30-day notice"
+
+    thresholds:
+      critical: 85
+      high: 70
+      medium: 50
+      low: 0
+
+    actions:
+      critical:
+        trigger: "churn_risk_score > 85"
+        action: "send_retention_offer"
+        timeline: "within 24 hours"
+        owner: "retention_team"
+
+      high:
+        trigger: "churn_risk_score 70-85"
+        action: "monitor_and_prepare"
+        timeline: "within 48 hours"
+        owner: "analytics_team"
+
+    tags:
+      - retention
+      - predictive
+      - risk
+      - customer-health
+
+  # ========================================================================
+  # METRIC 3: Repeat Purchase Rate
+  # ========================================================================
+  - name: repeat_purchase_rate
+    type: simple
+    label: "Repeat Purchase Rate (%)"
+    description: >
+      Percentage of customers who have made more than one purchase.
+      Indicator of customer satisfaction and loyalty.
+
+    owner: "analytics@retailcompany.com"
+    team: "Analytics"
+    status: "active"
+
+    formula: "(COUNT(DISTINCT customer_id WHERE purchase_frequency > 1) / COUNT(DISTINCT customer_id)) * 100"
+
+    unit: "percentage"
+    precision: 1
+    min_value: 0
+    max_value: 100
+
+    benchmark:
+      industry_average: 42
+      our_target: 50
+      high_performer: "> 60%"
+
+    tags:
+      - retention
+      - loyalty
+      - engagement
+
+  # ========================================================================
+  # METRIC 4: High-Value Customer Count
+  # ========================================================================
+  - name: high_value_customer_count
+    type: simple
+    label: "High-Value Customer Count"
+    description: >
+      Number of customers with LTV > $5000.
+      VIP segment requiring dedicated retention efforts.
+
+    owner: "analytics@retailcompany.com"
+    team: "Analytics"
+    status: "active"
+
+    formula: "COUNT(DISTINCT customer_id WHERE customer_ltv > 5000)"
+
+    unit: "count"
+    precision: 0
+
+    benchmark:
+      target_percentage: "10-15% of active customers"
+      strategic_goal: "grow by 20% YoY"
+
+    tags:
+      - customer-segmentation
+      - revenue
+      - strategic
+
+  # ========================================================================
+  # METRIC 5: At-Risk Customer Count (Critical)
+  # ========================================================================
+  - name: at_risk_customer_count
+    type: simple
+    label: "At-Risk Customer Count"
+    description: >
+      Number of customers with churn_risk_score > 70.
+      Immediate intervention target for retention campaigns.
+
+    owner: "analytics@retailcompany.com"
+    team: "Analytics"
+    status: "active"
+
+    formula: "COUNT(DISTINCT customer_id WHERE churn_risk_score > 70)"
+
+    unit: "count"
+    precision: 0
+
+    critical_threshold: 20
+    warning_threshold: 15
+
+    alert: "If at_risk_customer_count > critical_threshold, escalate to VP of Retention"
+
+    tags:
+      - retention
+      - customer-health
+      - risk
+      - critical
+
+  # ========================================================================
+  # METRIC 6: Average Order Value (AOV)
+  # ========================================================================
+  - name: average_order_value
+    type: simple
+    label: "Average Order Value (USD)"
+    description: >
+      Mean transaction value across all orders.
+      Key driver of customer lifetime value.
+
+    owner: "analytics@retailcompany.com"
+    team: "Analytics"
+    status: "active"
+
+    formula: "SUM(order_value) / COUNT(DISTINCT order_id)"
+
+    unit: "USD"
+    precision: 2
+
+    benchmark:
+      industry_average: 75
+      our_target: 95
+
+    tags:
+      - revenue
+      - transaction
+      - ltv-driver
+
+  # ========================================================================
+  # METRIC 7: Purchase Frequency (12-month)
+  # ========================================================================
+  - name: purchase_frequency_12m
+    type: simple
+    label: "Purchase Frequency (12 months)"
+    description: >
+      Average number of purchases per customer in last 12 months.
+      Indicator of customer engagement and loyalty.
+
+    owner: "analytics@retailcompany.com"
+    team: "Analytics"
+    status: "active"
+
+    formula: "SUM(purchase_count) / COUNT(DISTINCT customer_id)"
+
+    unit: "purchases"
+    precision: 1
+
+    benchmark:
+      industry_average: 6
+      our_target: 8
+      high_performer: "> 10"
+
+    tags:
+      - engagement
+      - loyalty
+      - ltv-driver
+
+  # ========================================================================
+  # METRIC 8: Retention Rate (Derived)
+  # ========================================================================
+  - name: retention_rate
+    type: derived
+    label: "Customer Retention Rate (%)"
+    description: >
+      Percentage of customers from previous period who remained active.
+      Derived metric: combines repeat_purchase_rate and churn patterns.
+
+    owner: "analytics@retailcompany.com"
+    team: "Analytics"
+    status: "active"
+
+    formula: "repeat_purchase_rate * (1 - (at_risk_customer_count / total_active_customers))"
+    depends_on:
+      - repeat_purchase_rate
+      - at_risk_customer_count
+      - total_active_customers
+
+    unit: "percentage"
+    precision: 1
+
+    benchmark:
+      industry_average: "40-50%"
+      our_target: "55%"
+      strategic_goal: "increase by 5% this year"
+
+    tags:
+      - retention
+      - derived
+      - kpi
+      - strategic
+
+  # ========================================================================
+  # METRIC 9: Dormant Customer Count
+  # ========================================================================
+  - name: dormant_customer_count
+    type: simple
+    label: "Dormant Customer Count"
+    description: >
+      Number of customers with no purchase in 365+ days AND churn_risk_score > 90.
+      Win-back campaign target audience.
+
+    owner: "analytics@retailcompany.com"
+    team: "Analytics"
+    status: "active"
+
+    formula: "COUNT(DISTINCT customer_id WHERE days_since_purchase > 365 AND churn_risk_score > 90)"
+
+    unit: "count"
+    precision: 0
+
+    campaign_target: "yes"
+    expected_recovery_rate: "15-20%"
+
+    tags:
+      - retention
+      - win-back
+      - customer-recovery
+
+# ============================================================================
+# Metric Relationships & Dependencies
+# ============================================================================
+
+relationships:
+  - source: customer_ltv
+    target: repeat_purchase_rate
+    relationship: "LTV increases with higher repeat rate"
+
+  - source: churn_risk_score
+    target: retention_rate
+    relationship: "Higher churn risk lowers retention rate"
+
+  - source: average_order_value
+    target: customer_ltv
+    relationship: "AOV is a component of LTV calculation"
+
+  - source: at_risk_customer_count
+    target: dormant_customer_count
+    relationship: "Dormant customers are subset of at-risk"
+
+# ============================================================================
+# Quality Assurance Rules
+# ============================================================================
+
+quality_checks:
+  - metric: customer_ltv
+    rule: "min_value >= 0"
+    rule: "max_value < 100000"
+    rule: "no nulls"
+
+  - metric: churn_risk_score
+    rule: "value between 0-100"
+    rule: "updated daily"
+    rule: "no gaps in time series"
+
+  - metric: retention_rate
+    rule: "value between 0-100"
+    rule: "must be <= repeat_purchase_rate"
+
+# ============================================================================
+# Access Control & Permissions
+# ============================================================================
+
+access:
+  - role: "analytics"
+    metrics: ["all"]
+    operations: ["read", "write"]
+
+  - role: "marketing"
+    metrics: ["customer_ltv", "churn_risk_score", "at_risk_customer_count", "retention_rate"]
+    operations: ["read"]
+
+  - role: "finance"
+    metrics: ["customer_ltv", "average_order_value", "high_value_customer_count"]
+    operations: ["read"]
+
+  - role: "executive"
+    metrics: ["customer_ltv", "retention_rate", "high_value_customer_count", "at_risk_customer_count"]
+    operations: ["read"]

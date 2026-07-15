@@ -1,0 +1,183 @@
+dataContractSpecification: "0.9.3"
+id: "urn:uuid:customer-metrics-retail-2026"
+info:
+  title: Customer Lifetime Value & Churn Analytics
+  version: "1.0"
+  description: >
+    Real-time customer health metrics for retail/e-commerce operations.
+    Contains customer lifetime value (LTV), churn risk scores, purchase
+    frequency, and behavioral indicators. Use this contract to assess
+    customer profitability, retention urgency, and segment value.
+  owner: analytics@retailcompany.com
+  status: active
+  tags:
+    - customer-analytics
+    - revenue
+    - retention
+
+models:
+  - name: customer_metrics
+    description: >
+      Daily customer health snapshot aggregated by customer ID and region.
+      Tracks customer lifetime value, churn risk, repeat purchase behavior,
+      and engagement signals. Refresh cadence: daily at 02:00 UTC.
+
+      Primary use cases:
+      - Identify high-value customers for VIP programs
+      - Detect at-risk customers for retention campaigns
+      - Measure repeat purchase rate by segment
+      - Forecast customer lifetime value trends
+
+    owner: analytics@retailcompany.com
+    columns:
+      - name: customer_id
+        type: string
+        description: Unique customer identifier (anonymized)
+        required: true
+        example: "CUST_92847"
+
+      - name: region
+        type: string
+        description: Geographic region (US, EU, APAC)
+        required: true
+        example: "US"
+
+      - name: customer_ltv
+        type: decimal
+        description: >
+          Customer lifetime value in USD.
+          Calculated as: (Average Order Value × Purchase Frequency × Lifespan in Months)
+
+          Tiers:
+          - High-value: LTV > $5000
+          - Standard: LTV $1000-$5000
+          - Low-value: LTV < $1000
+        required: true
+        example: 2847.50
+        precision: 2
+
+      - name: churn_risk_score
+        type: decimal
+        description: >
+          Churn risk as 0-100 score (100 = highest risk).
+          Formula: (days_since_purchase × 10) + (return_rate × 5) - (repeat_rate × 3)
+
+          Thresholds:
+          - Score > 85: CRITICAL — trigger retention offer within 24 hours
+          - Score 70-85: HIGH — monitor closely, prepare offer
+          - Score 50-70: MEDIUM — watch for further decline
+          - Score < 50: LOW — stable customer
+        required: true
+        example: 72
+        precision: 0
+
+      - name: repeat_purchase_rate
+        type: decimal
+        description: >
+          Percentage of customers who made repeat purchases (0-100).
+          Calculated as: (repeat_customers / total_customers) × 100
+        required: true
+        example: 45.5
+        precision: 1
+
+      - name: average_order_value
+        type: decimal
+        description: Average value per order in USD
+        required: true
+        example: 87.99
+        precision: 2
+
+      - name: purchase_frequency_12m
+        type: decimal
+        description: Number of purchases in last 12 months
+        required: true
+        example: 8.5
+        precision: 1
+
+      - name: days_since_last_purchase
+        type: integer
+        description: Days since last purchase (0 = purchased today)
+        required: true
+        example: 23
+
+      - name: return_rate
+        type: decimal
+        description: Percentage of purchases returned (0-100)
+        required: true
+        example: 12.3
+        precision: 1
+
+      - name: segment
+        type: string
+        description: >
+          Customer segment assignment.
+          Values: high-value, standard, at-risk, dormant
+        required: true
+        example: "standard"
+
+      - name: updated_date
+        type: date
+        description: Date of last metric refresh (UTC)
+        required: true
+        example: "2026-05-09"
+
+servers:
+  - type: duckdb
+    location: "./customer_analytics.duckdb"
+    description: Local DuckDB instance for retail analytics
+
+quality:
+  checks:
+    - name: row_count_check
+      description: Table must have at least 1 row
+      rule: "row_count > 0"
+
+    - name: duplicate_check
+      description: No duplicate customer_id + region combinations
+      rule: "duplicate_count(customer_id, region) = 0"
+
+    - name: ltv_validity_check
+      description: LTV must be non-negative
+      rule: "min(customer_ltv) >= 0"
+
+    - name: churn_score_range_check
+      description: Churn score must be between 0-100
+      rule: "min(churn_risk_score) >= 0 AND max(churn_risk_score) <= 100"
+
+    - name: repeat_rate_range_check
+      description: Repeat rate must be between 0-100
+      rule: "min(repeat_purchase_rate) >= 0 AND max(repeat_purchase_rate) <= 100"
+
+servicelevels:
+  availability:
+    description: Target uptime for analytics queries
+    target: "99.5%"
+
+  freshness:
+    description: Data must be updated daily
+    target: "P1D"  # ISO 8601: 1 day
+    schedule: "02:00 UTC every day"
+
+  retention:
+    description: Rolling retention period for historical data
+    target: "P2Y"  # ISO 8601: 2 years
+
+  support:
+    description: Support response time for data issues
+    target: "P1D"  # 1 business day
+    contact: "analytics@retailcompany.com"
+
+terms:
+  usage:
+    - "Data is provided for internal marketing and analytics use only"
+    - "Not for use in direct targeting without compliance review"
+    - "GDPR/CCPA regulations apply to all customer data usage"
+    - "Data must not be exported or shared without approval"
+
+  limitations:
+    - "Churn scores are predictive and may not reflect actual behavior"
+    - "LTV calculations use historical data; future value may differ"
+    - "Data is anonymized at customer_id level; do not attempt to re-identify"
+
+  noticePeriod: "30 days"
+  supportEmail: "analytics@retailcompany.com"

@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "slayer": {
+      "command": "uvx",
+      "args": ["--from", "motley-slayer[all]", "slayer", "mcp"],
+      "env": {}
+    }
+  }
+}
